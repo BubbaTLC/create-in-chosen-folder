@@ -1,9 +1,9 @@
 {
 	"id": "create-in-chosen-folder",
 	"name": "Create In Chosen Folder",
-	"version": "1.0.0",
-	"minAppVersion": "1.7.2",
-	"description": "When clicking a link to a note that doesn't exist, choose which folder to create it in.",
+	"version": "1.0.1",
+	"minAppVersion": "1.6.6",
+	"description": "Choose which folder to create a note in when you click a link to a note that doesn't exist yet.",
 	"author": "Bubba Chabot",
 	"authorUrl": "https://github.com/BubbaTLC",
 	"isDesktopOnly": false

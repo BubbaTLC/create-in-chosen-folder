@@ -18,7 +18,11 @@ An Obsidian plugin. When you click a link to a note that doesn't exist yet (for 
 npm install
 npm run build
 mkdir -p <vault>/.obsidian/plugins/create-in-chosen-folder
-cp main.js manifest.json <vault>/.obsidian/plugins/create-in-chosen-folder/
+cp main.js manifest.json styles.css <vault>/.obsidian/plugins/create-in-chosen-folder/
 ```
 
 Then turn it on in **Settings → Community plugins**.
+
+## Privacy
+
+This plugin works entirely offline. It makes no network requests, collects no data, and only reads and writes files inside your vault.

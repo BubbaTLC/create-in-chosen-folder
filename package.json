@@ -1,6 +1,6 @@
 {
 	"name": "create-in-chosen-folder",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Choose the folder when creating a note from an unresolved link.",
 	"main": "main.js",
 	"scripts": {
@@ -14,5 +14,8 @@
 		"esbuild": "^0.24.0",
 		"obsidian": "latest",
 		"typescript": "^5.6.0"
+	},
+	"dependencies": {
+		"monkey-around": "^3.0.0"
 	}
 }

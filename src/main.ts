@@ -1,4 +1,5 @@
-import { App, getLinkpath, normalizePath, Notice, Plugin, PluginSettingTab, Setting, SuggestModal, TFile, TFolder, Workspace } from "obsidian";
+import { around } from "monkey-around";
+import { App, getLinkpath, normalizePath, Notice, Plugin, PluginSettingTab, Setting, SuggestModal, TFile, Workspace } from "obsidian";
 
 type OpenLinkText = Workspace["openLinkText"];
 
@@ -72,7 +73,7 @@ class FolderPickerModal extends SuggestModal<string> {
 		} else {
 			el.setText(value === "/" ? "/ (vault root)" : value);
 			if (this.recent.has(value)) {
-				el.createSpan({ text: "  🕑 recent", cls: "create-in-chosen-folder-recent" }).style.opacity = "0.6";
+				el.createSpan({ text: "recent", cls: "create-in-chosen-folder-recent" });
 			}
 		}
 	}
@@ -93,34 +94,29 @@ class FolderPickerModal extends SuggestModal<string> {
 
 export default class CreateInChosenFolderPlugin extends Plugin {
 	settings: CreateInChosenFolderSettings = { ...DEFAULT_SETTINGS };
-	private originalOpenLinkText: OpenLinkText | null = null;
 
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new CreateInChosenFolderSettingTab(this.app, this));
 
-		const workspace = this.app.workspace;
-		const original = workspace.openLinkText;
-		this.originalOpenLinkText = original;
-
 		const plugin = this;
-		workspace.openLinkText = async function (linktext, sourcePath, newLeaf, openViewState) {
-			const linkpath = getLinkpath(linktext);
-			const exists = plugin.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
-			if (exists || !linkpath) {
-				return original.call(this, linktext, sourcePath, newLeaf, openViewState);
-			}
-			const created = await plugin.promptAndCreate(linkpath);
-			if (!created) return;
-			const subpath = linktext.slice(linkpath.length);
-			return original.call(this, created + subpath, sourcePath, newLeaf, openViewState);
-		};
-	}
-
-	onunload() {
-		if (this.originalOpenLinkText) {
-			this.app.workspace.openLinkText = this.originalOpenLinkText;
-		}
+		this.register(
+			around(this.app.workspace, {
+				openLinkText(original: OpenLinkText): OpenLinkText {
+					return async function (this: Workspace, linktext, sourcePath, newLeaf, openViewState) {
+						const linkpath = getLinkpath(linktext);
+						const exists = plugin.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
+						if (exists || !linkpath) {
+							return original.call(this, linktext, sourcePath, newLeaf, openViewState);
+						}
+						const created = await plugin.promptAndCreate(linkpath);
+						if (!created) return;
+						const subpath = linktext.slice(linkpath.length);
+						return original.call(this, created + subpath, sourcePath, newLeaf, openViewState);
+					};
+				},
+			}),
+		);
 	}
 
 	async loadSettings() {
@@ -145,7 +141,7 @@ export default class CreateInChosenFolderPlugin extends Plugin {
 		folder = folder === "/" ? "" : normalizePath(folder);
 
 		try {
-			if (folder && !(this.app.vault.getAbstractFileByPath(folder) instanceof TFolder)) {
+			if (folder && !this.app.vault.getFolderByPath(folder)) {
 				await this.app.vault.createFolder(folder);
 			}
 			const fileName = baseName.endsWith(".md") ? baseName : `${baseName}.md`;
