@@ -1,5 +1,5 @@
 import { around } from "monkey-around";
-import { App, getLinkpath, normalizePath, Notice, Plugin, PluginSettingTab, Setting, SuggestModal, TFile, Workspace } from "obsidian";
+import { App, getLinkpath, normalizePath, Notice, Plugin, PluginSettingTab, Setting, SettingDefinitionItem, SuggestModal, TFile, Workspace } from "obsidian";
 
 type OpenLinkText = Workspace["openLinkText"];
 
@@ -86,7 +86,7 @@ class FolderPickerModal extends SuggestModal<string> {
 	onClose(): void {
 		super.onClose();
 		// onChooseSuggestion fires after onClose, so defer the cancel check.
-		setTimeout(() => {
+		window.setTimeout(() => {
 			if (!this.chosen) this.onPick(null);
 		}, 0);
 	}
@@ -99,17 +99,18 @@ export default class CreateInChosenFolderPlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new CreateInChosenFolderSettingTab(this.app, this));
 
-		const plugin = this;
+		const promptAndCreate = (linkpath: string) => this.promptAndCreate(linkpath);
+		const metadataCache = this.app.metadataCache;
 		this.register(
 			around(this.app.workspace, {
 				openLinkText(original: OpenLinkText): OpenLinkText {
 					return async function (this: Workspace, linktext, sourcePath, newLeaf, openViewState) {
 						const linkpath = getLinkpath(linktext);
-						const exists = plugin.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
+						const exists = metadataCache.getFirstLinkpathDest(linkpath, sourcePath);
 						if (exists || !linkpath) {
 							return original.call(this, linktext, sourcePath, newLeaf, openViewState);
 						}
-						const created = await plugin.promptAndCreate(linkpath);
+						const created = await promptAndCreate(linkpath);
 						if (!created) return;
 						const subpath = linktext.slice(linkpath.length);
 						return original.call(this, created + subpath, sourcePath, newLeaf, openViewState);
@@ -120,7 +121,8 @@ export default class CreateInChosenFolderPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as Partial<CreateInChosenFolderSettings> | null;
+		this.settings = { ...DEFAULT_SETTINGS, ...data };
 	}
 
 	async saveSettings() {
@@ -155,6 +157,9 @@ export default class CreateInChosenFolderPlugin extends Plugin {
 	}
 }
 
+const RECENT_NAME = "Number of recent folders";
+const RECENT_DESC = "How many folders with the most recently created notes to show at the top of the picker. Set to 0 to disable.";
+
 class CreateInChosenFolderSettingTab extends PluginSettingTab {
 	constructor(
 		app: App,
@@ -163,18 +168,27 @@ class CreateInChosenFolderSettingTab extends PluginSettingTab {
 		super(app, plugin);
 	}
 
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		return [
+			{
+				name: RECENT_NAME,
+				desc: RECENT_DESC,
+				control: { type: "slider", key: "recentCount", min: 0, max: 20, step: 1, defaultValue: DEFAULT_SETTINGS.recentCount },
+			},
+		];
+	}
+
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("Number of recent folders")
-			.setDesc("How many folders with the most recently created notes to show at the top of the picker. Set to 0 to disable.")
+			.setName(RECENT_NAME)
+			.setDesc(RECENT_DESC)
 			.addSlider((slider) =>
 				slider
 					.setLimits(0, 20, 1)
 					.setValue(this.plugin.settings.recentCount)
-					.setDynamicTooltip()
 					.onChange(async (value) => {
 						this.plugin.settings.recentCount = value;
 						await this.plugin.saveSettings();
