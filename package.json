@@ -1,6 +1,6 @@
 {
 	"name": "create-in-chosen-folder",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Choose the folder when creating a note from an unresolved link.",
 	"main": "main.js",
 	"scripts": {
