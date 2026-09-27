@@ -12,6 +12,15 @@ An Obsidian plugin. When you click a link to a note that doesn't exist yet (for 
 
 - **Number of recent folders**: how many "recent" folders appear at the top of the picker (0–20, default 5). Set it to 0 to turn the recent section off. A folder counts as recent based on when notes directly inside it were created.
 
+## Works well with Templater
+
+This plugin pairs well with [Templater](https://github.com/silentvoid13/Templater) ([open in Obsidian](obsidian://show-plugin?id=templater-obsidian)). Templater's folder templates apply a template to new notes based on the folder they're created in. Because this plugin lets you create each note in the right folder, the right template gets applied to it automatically.
+
+To set it up in Templater's settings:
+
+1. Turn on **Trigger Templater on new file creation**.
+2. Under **Folder templates**, match each folder to the template you want new notes there to use.
+
 ## Install
 
 ```sh
